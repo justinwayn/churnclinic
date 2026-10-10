@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChurnClinic Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="logo" href="/">🩺 ChurnClinic</a>
+    <span class="muted">Dashboard</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <h1>Churn dashboard</h1>
+  <div id="stats" class="stat-grid"></div>
+
+  <h2>Top cancellation reasons</h2>
+  <div id="reasons" class="card"><p class="muted">Loading…</p></div>
+
+  <h2>Recent cancellations</h2>
+  <div class="card table-wrap">
+    <table id="recent">
+      <thead><tr><th>Customer</th><th>Plan</th><th>MRR</th><th>Reason</th><th>Status</th><th>Canceled</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <h2>Win-back email templates</h2>
+  <p class="muted">Customize the 3-email drip. <code>{name}</code> <code>{product}</code> <code>{founder}</code> <code>{survey_url}</code> <code>{pause_url}</code> are filled in per customer.</p>
+  <div id="templates"></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const money = c => '$' + (c/100).toFixed(2);
+
+async function load() {
+  const s = await (await fetch('/api/stats')).json();
+  $('#stats').innerHTML = `
+    <div class="card stat"><span class="num">${s.total_cancellations}</span><span class="lbl">Cancellations</span></div>
+    <div class="card stat"><span class="num">${s.saved}</span><span class="lbl">Saved (${s.save_rate}%)</span></div>
+    <div class="card stat"><span class="num">${s.paused}</span><span class="lbl">Paused</span></div>
+    <div class="card stat"><span class="num">${money(s.recovered_mrr_cents)}</span><span class="lbl">Recovered MRR</span></div>
+    <div class="card stat"><span class="num">${money(s.lost_mrr_cents)}</span><span class="lbl">Lost MRR</span></div>
+    <div class="card stat"><span class="num">${s.survey_response_rate}%</span><span class="lbl">Survey response</span></div>`;
+
+  const max = Math.max(1, ...s.reasons.map(r => r.count));
+  $('#reasons').innerHTML = s.reasons.length ? s.reasons.map(r => `
+    <div class="bar-row"><span class="bar-label">${r.label}</span>
+    <div class="bar"><div class="bar-fill" style="width:${(r.count/max*100).toFixed(0)}%"></div></div>
+    <span class="bar-num">${r.count}</span></div>`).join('')
+    : '<p class="muted">No survey responses yet.</p>';
+
+  $('#recent tbody').innerHTML = s.recent.map(r => `
+    <tr><td>${r.customer_name || ''}<br><span class="muted small">${r.customer_email || ''}</span></td>
+    <td>${r.plan_name || '—'}</td><td>${money(r.mrr_cents)}</td>
+    <td>${r.reason || '<span class="muted">no response</span>'}</td>
+    <td><span class="pill ${r.status}">${r.status}</span></td>
+    <td>${new Date(r.canceled_at*1000).toLocaleDateString()}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="muted">No cancellations yet. Send a test webhook to see data.</td></tr>';
+
+  const t = await (await fetch('/api/templates')).json();
+  $('#templates').innerHTML = t.map(x => `
+    <div class="card tpl"><h3>${x.email_key}</h3>
+    <label class="field">Subject<input data-k="${x.email_key}" data-f="subject" value="${x.subject.replace(/"/g,'&quot;')}"></label>
+    <label class="field">Body<textarea data-k="${x.email_key}" data-f="body" rows="6">${x.body}</textarea></label>
+    <button class="btn" onclick="saveTpl('${x.email_key}')">Save</button>
+    <span class="muted small" id="saved-${x.email_key}"></span></div>`).join('');
+}
+
+async function saveTpl(key) {
+  const subject = document.querySelector(`[data-k="${key}"][data-f="subject"]`).value;
+  const body = document.querySelector(`[data-k="${key}"][data-f="body"]`).value;
+  const r = await fetch('/api/templates/' + key, {method:'PUT',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({subject, body})});
+  document.getElementById('saved-' + key).textContent = r.ok ? 'Saved ✓' : 'Error';
+}
+load();
+</script>
+</body>
+</html>

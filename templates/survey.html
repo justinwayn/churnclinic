@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick question — {{ product }}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="wrap narrow">
+  <div class="card survey">
+    <h1>Sorry to see you go{{ ", " + name if name != "there" else "" }}.</h1>
+    <p>One quick question — it'll take 20 seconds and genuinely helps:</p>
+    <form method="post" action="/s/{{ token }}">
+      <fieldset>
+        <legend>Why did you cancel?</legend>
+        {% for key, label in reasons %}
+        <label class="radio"><input type="radio" name="reason" value="{{ key }}" required> {{ label }}</label>
+        {% endfor %}
+      </fieldset>
+      <label class="field">Anything else? (optional)
+        <textarea name="detail" rows="3" placeholder="Tell us in your own words…"></textarea>
+      </label>
+      <button class="btn btn-big" type="submit">Send feedback</button>
+    </form>
+    <p class="muted small">Changed your mind? <a href="/pause/{{ token }}">Pause instead of canceling</a> — keep your data, pay nothing for up to 3 months.</p>
+  </div>
+</div>
+</body>
+</html>
