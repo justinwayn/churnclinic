@@ -50,8 +50,23 @@ def init_db() -> None:
                 body TEXT,
                 updated_at INTEGER DEFAULT (strftime('%s','now'))
             );
+            CREATE TABLE IF NOT EXISTS pro_interest (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                created_at INTEGER DEFAULT (strftime('%s','now'))
+            );
             """
         )
+
+
+def save_pro_interest(email: str) -> bool:
+    """Notify-me signup for Clinic Pro before checkout is configured."""
+    email = (email or "").strip()[:254]
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return False
+    with _conn() as c:
+        c.execute("INSERT INTO pro_interest (email) VALUES (?)", (email,))
+    return True
 
 
 # ---------- cancellations ----------

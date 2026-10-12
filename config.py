@@ -14,6 +14,17 @@ def _env(name: str, default: str = "") -> str:
 STRIPE_API_KEY = _env("STRIPE_API_KEY")
 STRIPE_WEBHOOK_SECRET = _env("STRIPE_WEBHOOK_SECRET")
 
+# Clinic Pro checkout: Stripe Payment Link (Justin creates it in the Stripe
+# Dashboard -> Payment Links for "Clinic Pro" $12/mo and pastes the URL here).
+# No secret keys are needed in code for a Payment Link; the secret key is only
+# used for the webhook + pause-collection Stripe API calls above.
+CLINIC_PRO_PAYMENT_LINK = _env("CLINIC_PRO_PAYMENT_LINK", "")
+
+
+def clinic_pro_configured() -> bool:
+    return CLINIC_PRO_PAYMENT_LINK.startswith("https://buy.stripe.com/")
+
+
 # Resend (stubbed until set)
 RESEND_API_KEY = _env("RESEND_API_KEY")
 EMAIL_FROM = _env("EMAIL_FROM", "ChurnClinic <noreply@example.com>")

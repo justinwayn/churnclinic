@@ -49,6 +49,27 @@ def dashboard(request: Request):
     return templates.TemplateResponse(request, "dashboard.html", {"request": request})
 
 
+@app.get("/pricing", response_class=HTMLResponse)
+def pricing(request: Request):
+    return templates.TemplateResponse(request, "pricing.html", {
+        "request": request,
+        "pro_configured": config.clinic_pro_configured(),
+        "payment_link": config.CLINIC_PRO_PAYMENT_LINK,
+    })
+
+
+@app.post("/pricing/notify", response_class=HTMLResponse)
+def pricing_notify(request: Request, email: str = Form("")):
+    ok = db.save_pro_interest(email)
+    return templates.TemplateResponse(request, "pricing.html", {
+        "request": request,
+        "pro_configured": config.clinic_pro_configured(),
+        "payment_link": config.CLINIC_PRO_PAYMENT_LINK,
+        "notify_ok": ok,
+        "notify_email": email if ok else "",
+    })
+
+
 @app.get("/s/{token}", response_class=HTMLResponse)
 def survey_page(request: Request, token: str):
     cancel = db.get_by_token(token)

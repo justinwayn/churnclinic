@@ -53,3 +53,10 @@ th { color:var(--mut); font-weight:600; }
 .pill.paused { background:#3a3223; color:var(--warn); }
 .tpl h3 { margin-top:0; text-transform:capitalize; }
 code { background:var(--bg); padding:2px 6px; border-radius:6px; font-size:.85em; }
+/* pricing page (added 2026-10-11 builder alpha) */
+.feature-list { text-align:left; padding-left:20px; margin:12px 0 16px; }
+.feature-list li { margin:6px 0; }
+.inline-form { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+.inline-form input[type="email"] { flex:1; min-width:220px; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:inherit; font-size:1rem; }
+.flash { border-color:var(--acc); background:#123a22; }
+.nav-links a { margin-right:16px; color:inherit; text-decoration:none; }

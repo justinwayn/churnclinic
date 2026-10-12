@@ -7,3 +7,21 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      # Deploy-time config (Render prompts for values in the dashboard;
+      # nothing real is committed). See .env.example for what each one is.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: CLINIC_PRO_PAYMENT_LINK
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: BASE_URL
+        sync: false
+      - key: FOUNDER_NAME
+        sync: false
+      - key: PRODUCT_NAME
+        sync: false

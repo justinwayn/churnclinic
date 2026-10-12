@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pricing — ChurnClinic</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="logo" href="/">🩺 ChurnClinic</a>
+    <a class="btn" href="/dashboard">Dashboard</a>
+  </div>
+</header>
+
+<section class="wrap">
+  <h1>Pricing that pays for itself</h1>
+  <p class="lede">ChurnClinic is free while you're small. The moment you cross $500 MRR, Clinic Pro costs $12/mo — one saved customer covers it for a year.</p>
+
+  <div class="price-grid">
+    <div class="card">
+      <h3>Free</h3>
+      <p class="price">$0</p>
+      <p>Under $500 MRR, forever.</p>
+      <ul class="feature-list">
+        <li>Exit surveys on every cancellation</li>
+        <li>3-email win-back drip over 14 days</li>
+        <li>Churn-reason dashboard</li>
+        <li>Weekly churn digest</li>
+      </ul>
+      <a class="btn" href="/">Start free</a>
+    </div>
+
+    <div class="card highlight">
+      <h3>Clinic Pro</h3>
+      <p class="price">$12<span>/mo</span></p>
+      <p>Above $500 MRR or 50+ cancellations/mo. $99/yr annual.</p>
+      <ul class="feature-list">
+        <li>Everything in Free</li>
+        <li>Unlimited win-back drips</li>
+        <li>"Pause instead of cancel" offers</li>
+        <li>A/B test email variants</li>
+        <li>Priority digest + saved-MRR attribution</li>
+      </ul>
+      {% if pro_configured %}
+      <a class="btn btn-big" href="{{ payment_link }}" target="_blank" rel="noopener">Get Clinic Pro — $12/mo</a>
+      <p class="muted">Secure checkout via Stripe. Cancel anytime.</p>
+      {% else %}
+      <form method="post" action="/pricing/notify">
+        <label for="pro-email">Checkout opens soon — leave your email and we'll ping you at launch:</label>
+        <div class="inline-form">
+          <input id="pro-email" type="email" name="email" placeholder="you@yourstartup.com" required>
+          <button class="btn btn-big" type="submit">Notify me</button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if notify_ok %}
+  <div class="card flash">✓ You're on the list, {{ notify_email }} — we'll email you the moment Clinic Pro checkout goes live.</div>
+  {% endif %}
+
+  <div class="card math">
+    <strong>Honest math:</strong> at 5% monthly churn on $1,000 MRR, $50/mo leaks out.
+    A 20% save rate recovers $10/mo — Clinic Pro pays for itself from the first save.
+  </div>
+</section>
+
+<footer class="wrap footer">
+  <p>ChurnClinic — built for indie SaaS founders who'd rather keep customers than chase new ones.</p>
+</footer>
+</body>
+</html>
