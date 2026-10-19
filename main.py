@@ -109,20 +109,86 @@ def pause_submit(request: Request, token: str, months: int = Form(...)):
     cancel = db.get_by_token(token)
     if not cancel or not db.mark_paused(token, months):
         return HTMLResponse("Invalid or expired link.", status_code=404)
-    # Real Stripe call when configured: pause collection on the subscription.
+    # Real Stripe pause attempt when the operator has connected Stripe.
+    # The outcome is recorded, and the confirmation page only claims a
+    # billing pause when Stripe itself confirms one.
+    stripe_paused = False
     if config.stripe_configured():
-        _stripe_pause(cancel["stripe_subscription_id"], months)
+        result = _stripe_pause(cancel["stripe_subscription_id"], months)
+        stripe_paused = bool(result["ok"])
+        db.mark_pause_result(
+            token,
+            "stripe_paused" if stripe_paused
+            else f"recorded_only: {result['detail']}",
+        )
+    else:
+        db.mark_pause_result(token, "recorded_only: Stripe not connected")
     return templates.TemplateResponse(request, "pause_done.html", {
         "request": request, "product": config.PRODUCT_NAME,
+        "stripe_paused": stripe_paused, "months": months,
     })
 
 
-def _stripe_pause(subscription_id: str, months: int) -> None:
-    """Stub: real call would be Stripe 'pause collection' via API."""
-    # import stripe; stripe.api_key = config.STRIPE_API_KEY
-    # stripe.Subscription.modify(subscription_id,
-    #     pause_collection={"behavior": "void", "resumes_at": ...})
-    return None
+def _resumes_at(months: int) -> int:
+    """Unix timestamp `months` calendar months from now (UTC)."""
+    import calendar as _calendar
+
+    t = time.gmtime()
+    month_index = t.tm_mon - 1 + months
+    year = t.tm_year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(t.tm_mday, _calendar.monthrange(year, month)[1])
+    return _calendar.timegm(
+        (year, month, day, t.tm_hour, t.tm_min, t.tm_sec, 0, 0, 0))
+
+
+def _stripe_pause(subscription_id: str, months: int) -> dict:
+    """Pause collection on a Stripe subscription — a real API call.
+
+    Uses the operator's STRIPE_API_KEY (the Stripe credentials model this
+    single-tenant deploy has). Returns {"ok": bool, "detail": str}.
+
+    Honest catch: ChurnClinic learns about a cancellation from Stripe's
+    customer.subscription.deleted webhook — usually AFTER the
+    subscription is already gone. A deleted subscription cannot be
+    paused; Stripe answers with an error and there is nothing left to
+    bill anyway. So in the standard flow this returns ok=False and the
+    pause stands as a ChurnClinic record only. If a still-active
+    subscription is ever passed here, the pause is genuinely applied.
+    """
+    import json as _json
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    if not subscription_id:
+        return {"ok": False, "detail": "no subscription id on record"}
+    data = urllib.parse.urlencode({
+        "pause_collection[behavior]": "void",
+        "pause_collection[resumes_at]": _resumes_at(months),
+    }).encode()
+    req = urllib.request.Request(
+        f"https://api.stripe.com/v1/subscriptions/{subscription_id}",
+        data=data, method="POST",
+        headers={"Authorization": f"Bearer {config.STRIPE_API_KEY}",
+                 "Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            body = _json.loads(r.read().decode())
+        if body.get("pause_collection"):
+            return {"ok": True, "detail": "pause_collection set in Stripe"}
+        return {"ok": False,
+                "detail": "Stripe response had no pause_collection"}
+    except urllib.error.HTTPError as e:
+        try:
+            err = _json.loads(e.read().decode())
+            msg = (err.get("error") or {}).get("message") or str(e)
+        except Exception:  # noqa: BLE001
+            msg = str(e)
+        return {"ok": False, "detail": f"Stripe: {msg}"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "detail": str(e)}
 
 
 # ---------- API ----------

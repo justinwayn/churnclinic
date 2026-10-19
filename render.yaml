@@ -9,13 +9,17 @@ services:
         value: 3.11.0
       # Deploy-time config (Render prompts for values in the dashboard;
       # nothing real is committed). See .env.example for what each one is.
-      - key: STRIPE_SECRET_KEY
+      # NOTE: config.py reads STRIPE_API_KEY — a render.yaml entry named
+      # STRIPE_SECRET_KEY would never reach the app.
+      - key: STRIPE_API_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: CLINIC_PRO_PAYMENT_LINK
         sync: false
       - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
         sync: false
       - key: EMAIL_FROM
         sync: false

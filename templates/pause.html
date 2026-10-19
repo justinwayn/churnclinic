@@ -10,7 +10,7 @@
 <div class="wrap narrow">
   <div class="card survey">
     <h1>Need a break, not a goodbye?</h1>
-    <p>Pause your subscription for 1–3 months. You keep all your data, pay nothing while paused, and pick up right where you left off.</p>
+    <p>Your cancellation is already in, so you won't be charged again either way. If this is a break rather than a goodbye, say so here: we'll hold your place and your data for 1–3 months and check in before the pause ends.</p>
     <form method="post" action="/pause/{{ token }}">
       <fieldset>
         <legend>How long?</legend>
@@ -18,9 +18,9 @@
         <label class="radio"><input type="radio" name="months" value="2"> 2 months</label>
         <label class="radio"><input type="radio" name="months" value="3"> 3 months</label>
       </fieldset>
-      <button class="btn btn-big" type="submit">Pause my subscription</button>
+      <button class="btn btn-big" type="submit">Pause instead</button>
     </form>
-    <p class="muted small">No thanks — <a href="/s/{{ token }}">I'd rather just leave feedback</a>.</p>
+    <p class="muted small">Straight talk: pausing is recorded by {{ product }}. If your subscription is somehow still active in Stripe, we pause billing there too — if it already ended, there's nothing left to bill. No thanks — <a href="/s/{{ token }}">I'd rather just leave feedback</a>.</p>
   </div>
 </div>
 </body>

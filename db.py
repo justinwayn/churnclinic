@@ -34,6 +34,7 @@ def init_db() -> None:
                 status TEXT DEFAULT 'canceled',      -- canceled|saved|paused
                 saved_at INTEGER,
                 pause_months INTEGER,
+                pause_stripe TEXT,
                 created_at INTEGER DEFAULT (strftime('%s','now'))
             );
             CREATE TABLE IF NOT EXISTS drip_sends (
@@ -57,6 +58,12 @@ def init_db() -> None:
             );
             """
         )
+        # Migration for DBs created before pause_stripe existed: record of
+        # what the Stripe pause attempt actually did ("stripe_paused" or
+        # "recorded_only: <reason>").
+        cols = [r["name"] for r in c.execute("PRAGMA table_info(cancellations)")]
+        if "pause_stripe" not in cols:
+            c.execute("ALTER TABLE cancellations ADD COLUMN pause_stripe TEXT")
 
 
 def save_pro_interest(email: str) -> bool:
@@ -143,6 +150,15 @@ def mark_paused(token: str, months: int) -> bool:
             (months, token),
         )
     return cur.rowcount > 0
+
+
+def mark_pause_result(token: str, result: str) -> None:
+    """Record what the Stripe pause attempt did, so claims stay honest."""
+    with _conn() as c:
+        c.execute(
+            "UPDATE cancellations SET pause_stripe = ? WHERE survey_token = ?",
+            (result[:250], token),
+        )
 
 
 def list_cancellations(limit: int = 200) -> list[dict]:

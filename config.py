@@ -27,13 +27,28 @@ def clinic_pro_configured() -> bool:
 
 # Resend (stubbed until set)
 RESEND_API_KEY = _env("RESEND_API_KEY")
-EMAIL_FROM = _env("EMAIL_FROM", "ChurnClinic <noreply@example.com>")
+# Sender for all outbound email. IMPORTANT: Resend only delivers from
+# addresses on a domain VERIFIED in Resend. The default below uses
+# example.com, which can never be verified, so with the default every
+# live send fails with Resend "403 Forbidden". To make email actually
+# deliver, set RESEND_FROM (or EMAIL_FROM) to an address on a domain
+# you own and have verified in Resend, e.g. "ChurnClinic <hi@yourdomain>".
+# RESEND_FROM takes precedence; EMAIL_FROM is kept as the alias the rest
+# of the code reads.
+EMAIL_FROM = (
+    _env("RESEND_FROM")
+    or _env("EMAIL_FROM", "ChurnClinic <noreply@example.com>")
+)
+RESEND_FROM = EMAIL_FROM
 
 # App
-BASE_URL = _env("BASE_URL", "http://localhost:8000").rstrip("/")
+# BASE_URL builds the survey/pause links inside emails. The default is
+# the production deploy so links are correct even if the env var is
+# forgotten; set BASE_URL=http://localhost:8000 for local dev.
+BASE_URL = _env("BASE_URL", "https://churnclinic.onrender.com").rstrip("/")
 DB_PATH = _env("DB_PATH", os.path.join(os.path.dirname(__file__), "churnclinic.db"))
-FOUNDER_NAME = _env("FOUNDER_NAME", "Founder")
-PRODUCT_NAME = _env("PRODUCT_NAME", "Your SaaS")
+FOUNDER_NAME = _env("FOUNDER_NAME", "the ChurnClinic team")
+PRODUCT_NAME = _env("PRODUCT_NAME", "ChurnClinic")
 
 # Win-back drip schedule: (email_key, days_after_cancellation)
 DRIP_SCHEDULE = [

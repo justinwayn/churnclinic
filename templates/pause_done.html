@@ -10,7 +10,11 @@
 <div class="wrap narrow">
   <div class="card survey">
     <h1>You're paused. ⏸️</h1>
-    <p>Your subscription is paused — nothing to pay, nothing lost. We'll nudge you when it's time to come back.</p>
+    {% if stripe_paused %}
+    <p>Billing on your subscription is paused in Stripe for {{ months }} month{{ 's' if months != 1 }} — nothing to pay until it resumes, and your data is right where you left it.</p>
+    {% else %}
+    <p>Your pause is on record with {{ product }} for {{ months }} month{{ 's' if months != 1 }}. Straight talk: your subscription had already ended, so there was no active billing left to pause — you won't be charged again. Your data and your place are held for the pause window, and restarting when you're back is one click.</p>
+    {% endif %}
   </div>
 </div>
 </body>
