@@ -54,9 +54,17 @@ def send(to: str, subject: str, body: str, tag: str = "") -> dict:
         try:
             with urllib.request.urlopen(req, timeout=15) as r:
                 record["resend"] = json.loads(r.read().decode())
+            record["ok"] = True
         except Exception as e:  # noqa: BLE001
+            # Delivery FAILED (e.g. Resend 403 for an unverified sender
+            # domain). Say so explicitly and keep a durable local trace:
+            # callers must not treat this send as delivered.
+            record["ok"] = False
             record["error"] = str(e)
+            with open(OUTBOX, "a") as f:
+                f.write(json.dumps(record) + "\n")
     else:
+        record["ok"] = True  # stub delivery: logged to the outbox by design
         record["body"] = body
         with open(OUTBOX, "a") as f:
             f.write(json.dumps(record) + "\n")
@@ -77,9 +85,17 @@ def run_drip(now: int | None = None) -> list[dict]:
         template = db.get_template(drip["email_key"])
         subject, body = render(template, build_ctx(cancel))
         rec = send(drip["customer_email"], subject, body, tag=drip["email_key"])
-        db.mark_drip_sent(drip["id"])
+        if rec.get("ok"):
+            db.mark_drip_sent(drip["id"])
+            delivery = "sent"
+        else:
+            # Do NOT burn the step: a failed send (e.g. Resend 403 while
+            # the sender domain is unverified) stays due and is retried
+            # on the next run instead of being silently recorded as sent.
+            delivery = "failed_will_retry"
         results.append({"drip_id": drip["id"], "email_key": drip["email_key"],
-                        "to": drip["customer_email"], **rec})
+                        "to": drip["customer_email"], "delivery": delivery,
+                        **rec})
     return results
 
 
